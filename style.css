@@ -1,0 +1,26 @@
+* {
+    box-sizing: border-box;
+  }
+  main {
+    display: flex;
+    width: 600px;
+    flex-wrap: wrap;
+  }
+  .row {
+    /* display: flex;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid black; */
+  }
+  .square {
+    display: flex;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid black;
+  }
+
+  .snake {
+      background-color: red;
+  }
