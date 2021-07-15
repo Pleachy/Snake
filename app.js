@@ -59,8 +59,9 @@ const generateBoard = () => {
 const setSnakeSquares = () => {
     //iterate through the current snakeSquares
     for (let i = 0; i < state.snakeSquares.length; i++) {
-        //get the coordinates and turn them into a string
-        const coordString = `${state.snakeSquares[i][0]},${state.snakeSquares[i][1]}`
+        //get the coordinates and turn them into a string using coordArrayToString
+        const coordString = coordArrayToString(state.snakeSquares[i]);
+        console.log("setSnakeSquares function, coordString variable: " + coordString)
         //use our getElemByCoord function to get the DOM div element attached to our coordinates 
         const snakeSquare = getElemByCoord(coordString);
         //give it the snake class, turning the background red
@@ -73,21 +74,60 @@ const getElemByCoord = (coordString) => {
     return document.querySelector("[data-coordinates='" + coordString + "']");
 }
 
-//takes an array with x and y coordinates and moves the snake based on the arrow key pushed
-const moveSnake = (coordArray) => {
+//takes an array with two coordinates and turns it into a string
+const coordArrayToString = (coordArray) => {
+    return `${coordArray[0]},${coordArray[1]}`
+}
 
+//takes in a coordinate and sets the corresponging element's class to snake or removes it if it already exists
+const moveSnake = (coordString) => {
+    const snakeSquare = getElemByCoord(coordString);
+
+    snakeSquare.classList.add('snake');
+}
+
+//takes an array with x and y coordinates and turns it into two integers
+const coordArrayToInt = (coordArray) => {
+    let intX = parseInt(coordArray[0]);
+    let intY = parseInt(coordArray[1]);
+
+    return [intX, intY];
 }
 
 const changeYCoord = (coordArray, direction) => {
-    let newCoords = ''
+    //get the int representation of the coordinates
+    let [x,y] = coordArrayToInt(coordArray);
+    //if the up key is pressed, subtract one from the y value, moving one row up
+    if (direction === "up") {
+        y -= 1;
+    }
+    //if the down key is pressed, add one to the y value, moving one row down
+    else if (direction === "down") {
+        y += 1;
+    }
 
-    return newCoords;
+    //turn the new coordinates back into a string
+    const newCoords = coordArrayToString([x,y]);
+    //return the new coordinates as a string, and as an array of strings
+    return {newCoordsString: newCoords, newCoordsArray: [x.toString(),y.toString()]}
 }
 
-const changeXcoord = (coordArray, direction) => {
-    let newCoords = ''
+const changeXCoord = (coordArray, direction) => {
+    //get the int representation of the coordinates
+    let [x,y] = coordArrayToInt(coordArray);
+    //if the up key is pressed, subtract one from the y value, moving one row up
+    if (direction === "left") {
+        x -= 1;
+    }
+    //if the down key is pressed, add one to the y value, moving one row down
+    else if (direction === "right") {
+        x += 1;
+    }
 
-    return newCoords;
+    //turn the new coordinates back into a string
+    const newCoords = coordArrayToString([x,y]);
+    //returns the coordinates as a string, and as an array of strings
+    return {newCoordsString: newCoords, newCoordsArray: [x.toString(),y.toString()]};
 }
 
 // ***************** DOM MANIPULATION FUNCTIONS *****************
@@ -122,49 +162,68 @@ const renderBoard = () => {
         }
     }
 
+    //renders the snake squares by giving all the elements with coordinates in snakeSquares list the 'snake' class
     setSnakeSquares();
 
-
-
-    // //populate the board with squares div element (gonna try td and tr elements later on if this doesn't work)
-    // for (let i = 0; i < state.board.length; i++) {
-    //     //get the square number into a variable
-    //     const square = state.board[i];
-    //     //create a new div element to represent the square
-    //     const squareElem = document.createElement('div')
-    //     //give it a class so we can make changes to it in css
-    //     squareElem.classList.add('square');
-    //     //display the square number for visualization purposes
-    //     squareElem.innerHTML = square
-    //     //give the square an id so we can access it
-    //     squareElem.dataset.squareNum = i;
-    //     //append the square to main so that it shows up on the webpage
-    //     boardElem.appendChild(squareElem);
-
-    //     //if the square should contain a snakeSquare, color it
-    //     if (state.snakeSquares.includes(i)) {
-    //         squareElem.style.backgroundColor = 'red';
-    //     }
-
-    // }
 }
 
 // ***************** EVENT LISTENERS *****************
 document.addEventListener('keydown', function(event) {
     if (event.key === "ArrowRight") {
-        console.log("Right arrow was pressed");
+        //creates newCoordsArray and newCoordsString variables from the head of the snake
+        const {newCoordsArray, newCoordsString} = changeXCoord(state.snakeHead, "right");
+        //gets the element of the square to the right of the head
+        const rightSquareElem = getElemByCoord(newCoordsString);
+        //adds the new square to the snakeSquares array
+        state.snakeSquares.unshift(newCoordsArray);
+        //gets rid of the tail of the snake
+        state.snakeSquares.pop();
+        //renders the board
+        renderBoard();
     }
     if (event.key === "ArrowUp") {
+         //creates newCoordsArray and newCoordsString variables from the head of the snake
+        const {newCoordsArray, newCoordsString} = changeYCoord(state.snakeHead, "up");
+        //gets the element of the square to the right of the head
+        const rightSquareElem = getElemByCoord(newCoordsString);
+        //adds the new square to the snakeSquares array
+        state.snakeSquares.unshift(newCoordsArray);
+        //gets rid of the tail of the snake
+        state.snakeSquares.pop();
+        //renders the board
+        renderBoard();
         console.log("Up arrow was pressed");
     }
     if (event.key === "ArrowDown") {
+         //creates newCoordsArray and newCoordsString variables from the head of the snake
+        const {newCoordsArray, newCoordsString} = changeYCoord(state.snakeHead, "down");
+        //gets the element of the square to the right of the head
+        const rightSquareElem = getElemByCoord(newCoordsString);
+        //adds the new square to the snakeSquares array
+        state.snakeSquares.unshift(newCoordsArray);
+        //gets rid of the tail of the snake
+        state.snakeSquares.pop();
+        //renders the board
+        renderBoard();
         console.log("Down arrow was pressed");
     }
     if (event.key === "ArrowLeft") {
+         //creates newCoordsArray and newCoordsString variables from the head of the snake
+        const {newCoordsArray, newCoordsString} = changeXCoord(state.snakeHead, "left");
+        //gets the element of the square to the right of the head
+        const rightSquareElem = getElemByCoord(newCoordsString);
+        //adds the new square to the snakeSquares array
+        state.snakeSquares.unshift(newCoordsArray);
+        //gets rid of the tail of the snake
+        state.snakeSquares.pop();
+        //renders the board
+        renderBoard();
         console.log("Left arrow was pressed");
     }
+
 })
 
+//test zone
 boardElem.addEventListener('click', function(event) {
     console.log(event.target.dataset['coordinates']);
     console.log(typeof(event.target.dataset['coordinates']));
