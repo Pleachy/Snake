@@ -24,22 +24,16 @@ const resetState = () => {
     state.snakeSquares = [];
     //current length of the snake (default to 1 square)
     state.snakeLength = 1;
-    //create snake starting position and convert the ints into strings
-    const startPositionX = Math.floor(Math.random() * BOARD_SIZE_X).toString();
-    const startPositionY = Math.floor(Math.random() * BOARD_SIZE_Y).toString();
-    const startPosition = [startPositionX, startPositionY];
+    const startPosition = assignRandomCoordinate();
     //add that position to the snake squares
-    //state.snakeSquares.unshift(startPosition);
-    state.snakeSquares.unshift(["2", "3"]);
-    state.snakeSquares.unshift(["2", "4"]);
-    state.snakeSquares.unshift(["2", "5"]);
-    state.snakeSquares.unshift(["3", "5"]);
-    state.snakeSquares.unshift(["4", "5"]);
-    state.snakeSquares.unshift(["5", "5"]);
+    state.snakeSquares.unshift(startPosition);
     //this element is what we use to stop the snakes current movement 
     state.snakeMovement;
     //direction the snake is moving in
     state.snakeDirection;
+    //mouse
+    state.mouse = assignRandomCoordinate();
+
 }
 
 //generates a board based on BOARD_SIZE_X and BOARD_SIZE_Y
@@ -50,11 +44,26 @@ const generateBoard = () => {
             row.push(y);
         }
         state.board.push(row);
-
     }
+    console.log(state.board);
 }
 
+const assignRandomCoordinate = (coordinatesToExclude = []) => {
+    let returnCoord = [
+        Math.floor(Math.random() * BOARD_SIZE_X).toString(),
+        Math.floor(Math.random() * BOARD_SIZE_Y).toString()
+    ];
 
+    for (let i = 0; i < coordinatesToExclude.length; i++) {
+        if (areCoordinatesEqual(returnCoord, coordinatesToExclude[i])) {
+            return assignRandomCoordinate(coordinatesToExclude)
+        }
+    }
+    
+    return returnCoord;
+}
+
+const areCoordinatesEqual = (coordinateOne, coordinateTwo) => (coordinateOne.toString() === coordinateTwo.toString());
 
 // ***************** DOM SELECTORS *****************
 const boardElem = document.querySelector("#board");
@@ -123,42 +132,35 @@ const getNextMovement = () => {
     const snakeHead = state.snakeSquares[0];
 
     //determine the correct direction
+    let coordinatesObj;
     let coordsArray;
     let coordsString;
-    if (direction === "right") {
-        const coordinatesObj= changeXCoord(snakeHead, direction);
-        coordsArray = coordinatesObj.newCoordsArray;
-        coordsString = coordinatesObj.newCoordsString;
+    if (direction === "right" || direction === "left") {
+        coordinatesObj = changeXCoord(snakeHead, direction);
     }  
-    else if (direction === "left") {
-        const coordinatesObj = changeXCoord(snakeHead, direction);
-        coordsArray = coordinatesObj.newCoordsArray;
-        coordsString = coordinatesObj.newCoordsString;
-    } 
-    else if (direction === "up") {
-        const coordinatesObj = changeYCoord(snakeHead, direction);
-        coordsArray = coordinatesObj.newCoordsArray;
-        coordsString = coordinatesObj.newCoordsString;
-    }
-    else if (direction === "down") {
-        const coordinatesObj = changeYCoord(snakeHead, direction);
-        coordsArray = coordinatesObj.newCoordsArray;
-        coordsString = coordinatesObj.newCoordsString;
+    else if (direction === "up" || direction === "down") {
+        coordinatesObj = changeYCoord(snakeHead, direction);
     }
 
-    return {nextSquareArray: coordsArray, nextSquareString: coordsString}
+    if (coordinatesObj) {
+        coordsArray = coordinatesObj.newCoordsArray;
+        coordsString = coordinatesObj.newCoordsString;
+        return {nextSquareArray: coordsArray, nextSquareString: coordsString}
+    }
 }
 
 //moves the snake based on state.snakeDirection
 const moveSnake = () => {
-
+    
     const nextCoordsObj = getNextMovement();
-    let newCoordsArray = nextCoordsObj.nextSquareArray;
-
-    //adds the new square to the snakeSquares array
-    state.snakeSquares.unshift(newCoordsArray);
-    //gets rid of the tail of the snake
-    state.snakeSquares.pop();
+    if (nextCoordsObj) {
+        let newCoordsArray = nextCoordsObj.nextSquareArray;
+        
+        //adds the new square to the snakeSquares array
+        state.snakeSquares.unshift(newCoordsArray);
+        //gets rid of the tail of the snake
+        state.snakeSquares.pop();
+    }
 }
 
 //sets state.snakeDirection based on which arrowkey was pressed (called in mainGameLoop)
@@ -181,11 +183,14 @@ const getMovementDirection = (event) => {
 const mainGameLoop = () => {
     moveSnake();
     render();
-    detectColision();
+    if (wallCollisionDetected() || snakeCollisionDetected()) {
+        gameOver();
+    }
 }
 
+//resets the game and stops snake movement
 const gameOver = () => {
-    clearInterval(state.snakeMovme)
+    clearInterval(state.snakeMovement)
     resetState();
     render();
 }
@@ -201,39 +206,36 @@ const handleUserInput = (event) => {
     state.snakeMovement = setInterval(mainGameLoop, 200);
 }
 
-const detectColision = () => {
-    /* checks to see if the square the snake is going to move it is out of the grid bounds
-    which are set by BOARD_SIZE_X and BOARD_SIZE_Y*/
-    //get the coordinates for the next movement
-    const nextCoordsObj = getNextMovement();
-    //get the coordinate array for the next square to be moved into
-    const nextCoordsArray = nextCoordsObj.nextSquareArray;
-    //get the x and y values as ints so that we can compare them to our game board borders
-    const [x,y] = coordArrayToInt(nextCoordsArray);
+const wallCollisionDetected = () => {
+    let collision = false;
 
-    if (x > BOARD_SIZE_X|| x < -1) {
-        console.log("game over!")
-        gameOver();
+    const snakeHead = state.snakeSquares[0];
+    const [x,y] = coordArrayToInt(snakeHead);
+
+    if (x > BOARD_SIZE_X - 1 || x <= -1) {
+        collision = true;
     }
-    else if (y > BOARD_SIZE_Y || y < -1) {
-        console.log("game over!")
-        gameOver();
+    else if (y > BOARD_SIZE_Y - 1 || y <= -1) {
+        collision = true;
     }
+    return collision;
+    
 }
 
+const snakeCollisionDetected = () => {
+    const snakeHead = state.snakeSquares[0]
+    const collision =  state.snakeSquares.find((snakeBodySquare, index) => {
+        if (index !== 0 && areCoordinatesEqual(snakeHead, snakeBodySquare)) return true;//snakeBodySquare.toString() === snakeHead) return true;
+        return false
+    })
+    //cast to a boolean to avoid any weird behaviour from javscript
+    return Boolean(collision);
+}
 
 // ***************** DOM MANIPULATION FUNCTIONS *****************
 const renderBoard = () => {
     //empty the element
     boardElem.innerHTML = '';
-    //get the new snake head
-    //state.snakeHead = state.snakeSquares[0];
-    //get the new snake tail
-    state.snakeTail = state.snakeSquares[state.snakeSquares.length - 1];
-    //fill out the new snake using the snakeSquares array
-    for (let i = 0; i < state.snakeSquares.length; i++) {
-        //setSnakeSquares(state.snakeSquares[i]);
-    }
 
     for (let x = 0; x < state.board.length; x++) {
         //create an element to represent rows
@@ -259,8 +261,7 @@ const renderBoard = () => {
 const renderSnake = () => {
     //iterate through the current snakeSquares
     for (let i = 0; i < state.snakeSquares.length; i++) {
-        //get the coordinates and turn them into a string using coordArrayToString
-        const coordString = coordArrayToString(state.snakeSquares[i]);
+        const coordString = state.snakeSquares[i].toString();
         //use our getElemByCoord function to get the DOM div element attached to our coordinates 
         const snakeSquare = getElemByCoord(coordString);
         //give it the snake class, turning the background red
@@ -273,10 +274,19 @@ const renderSnake = () => {
     }
 }
 
+const renderMouse = () => {
+    const coordString = state.mouse.toString();
+    const mouseSquare = getElemByCoord(coordString);
+
+    mouseSquare.classList.add('mouse');
+}
+
 const render = () => {
     renderBoard();
     renderSnake();
+    renderMouse();
 }
+
 
 
 // ***************** EVENT LISTENERS *****************
@@ -284,7 +294,7 @@ document.addEventListener('keydown', handleUserInput)
 
 //test zone
 boardElem.addEventListener('click', function(event) {
- 
+    
 }) 
 
 // ***************** WEBPAGE INITIALIZATION *****************

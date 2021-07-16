@@ -21,6 +21,9 @@
     border: 1px solid black;
   }
 
+  .mouse {
+    background-color: yellow;
+}
   .snake {
       background-color: red;
   }
