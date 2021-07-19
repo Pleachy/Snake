@@ -1,29 +1,56 @@
 * {
     box-sizing: border-box;
+    color: white;
   }
+
+  body {
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      background-color: rgb(9, 44, 9);
+
+  }
+
+  h1 {
+    display: flex;
+    justify-content: center;
+  }
+
   main {
     display: flex;
-    width: 600px;
-    flex-wrap: wrap;
-  }
-  .row {
-    /* display: flex;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid black; */
   }
+
+  #score-board {
+      display: flex;
+      justify-content: space-around;
+  }
+
+  #start-game {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      margin-right: 45%;
+      margin-left: 45%;
+      background-color: rgb(77, 42, 22);
+  }
+
+  #instruction {
+    margin-top: 20px;
+    margin-right: 25%;
+    margin-left: 25%;
+  }
+
   .square {
-    display: flex;
-    justify-content: center;
     width: 30px;
     height: 30px;
     border: 1px solid black;
+    background-color: rgb(77, 42, 22);
   }
 
   .mouse {
-    background-color: yellow;
+    background-color: rgb(59, 59, 52);
 }
   .snake {
-      background-color: red;
+      background-color: rgb(60, 129, 63);
   }

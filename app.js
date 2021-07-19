@@ -1,21 +1,18 @@
-/*
-Priorities: set up the board: check
-
-
-
+/* Classic snake game
+Author: Daniel Golub (Pleachy)
+Last Updated: July 18th
 */
-
-
-
-
 
 // ***************** STATE *****************
 
 const state = {};
 const BOARD_SIZE_X = 20;
 const BOARD_SIZE_Y = 10;
+let HIGH_SCORE = 0;
 
 const resetState = () => {
+    state.interval = 200;
+
     state.board = [];
     //populate the board with rows and columns equal to BOARD_SIZE_X and BOARD_SIZE_Y
     generateBoard();
@@ -31,7 +28,9 @@ const resetState = () => {
     state.snakeMovement;
     //direction the snake is moving in
     state.snakeDirection;
-    //mouse
+    //last popped element of the snake
+    state.lastTailLocation;
+    //initial mouse generation
     state.mouse = assignRandomCoordinate();
 
 }
@@ -45,7 +44,6 @@ const generateBoard = () => {
         }
         state.board.push(row);
     }
-    console.log(state.board);
 }
 
 const assignRandomCoordinate = (coordinatesToExclude = []) => {
@@ -63,10 +61,12 @@ const assignRandomCoordinate = (coordinatesToExclude = []) => {
     return returnCoord;
 }
 
-const areCoordinatesEqual = (coordinateOne, coordinateTwo) => (coordinateOne.toString() === coordinateTwo.toString());
+//returns true if the passed coordinates are equal
+const areCoordinatesEqual = (coordinateOne, coordinateTwo) => coordinateOne.toString() === coordinateTwo.toString();
 
 // ***************** DOM SELECTORS *****************
 const boardElem = document.querySelector("#board");
+const startButtonElem = document.querySelector('#start-game');
 
 
 
@@ -158,26 +158,37 @@ const moveSnake = () => {
         
         //adds the new square to the snakeSquares array
         state.snakeSquares.unshift(newCoordsArray);
-        //gets rid of the tail of the snake
-        state.snakeSquares.pop();
+        //gets rid of the tail of the snake and put the popped element into last tail location
+        state.lastTailLocation = state.snakeSquares.pop();
     }
 }
 
 //sets state.snakeDirection based on which arrowkey was pressed (called in mainGameLoop)
 const getMovementDirection = (event) => {
     if (event.key === "ArrowRight") {
-        state.snakeDirection = "right";
+        //prevents the player from killing themselves by pressing the key opposite of the snake's direction
+        if (state.snakeDirection !== "left") {
+            state.snakeDirection = "right";
+        }
     }
     else if (event.key === "ArrowUp") {
-        state.snakeDirection = "up";
+        if (state.snakeDirection !== "down"){
+            state.snakeDirection = "up";
+        }
     }
     else if (event.key === "ArrowDown") {
-        state.snakeDirection = "down";
+        if (state.snakeDirection !== "up"){
+            state.snakeDirection = "down";
+        }
     }
     else if (event.key === "ArrowLeft") {
-        state.snakeDirection = "left";
+        if (state.snakeDirection !== "right") {
+            state.snakeDirection = "left";
+        }
     }
 }
+
+const increaseSpeed = (incrementAmount) => state.interval = state.interval - (state.interval * incrementAmount);
 
 //main game loop function which calls all out game logic and render functions
 const mainGameLoop = () => {
@@ -186,11 +197,22 @@ const mainGameLoop = () => {
     if (wallCollisionDetected() || snakeCollisionDetected()) {
         gameOver();
     }
+    if (mouseCollisionDetected()) {
+        growSnake();
+        updateMouse();
+        increaseSpeed(.1);
+    }
 }
 
 //resets the game and stops snake movement
 const gameOver = () => {
+    setNewHighScore(state.snakeSquares.length - 1);
     clearInterval(state.snakeMovement)
+    alert(`Game Over! Your score was: ${state.snakeSquares.length - 1}`);
+    startGame();
+}
+
+const startGame = () => {
     resetState();
     render();
 }
@@ -203,7 +225,7 @@ const handleUserInput = (event) => {
     //sets state.snakeDirection based on the arrowkey that was pressed
     getMovementDirection(event);
     //calls mainGameLoop every 1/10th of a second
-    state.snakeMovement = setInterval(mainGameLoop, 200);
+    state.snakeMovement = setInterval(mainGameLoop, state.interval);
 }
 
 const wallCollisionDetected = () => {
@@ -219,17 +241,39 @@ const wallCollisionDetected = () => {
         collision = true;
     }
     return collision;
-    
 }
 
 const snakeCollisionDetected = () => {
-    const snakeHead = state.snakeSquares[0]
+    const snakeHead = state.snakeSquares[0];
     const collision =  state.snakeSquares.find((snakeBodySquare, index) => {
-        if (index !== 0 && areCoordinatesEqual(snakeHead, snakeBodySquare)) return true;//snakeBodySquare.toString() === snakeHead) return true;
+        if (index !== 0 && areCoordinatesEqual(snakeHead, snakeBodySquare)) return true;
         return false
     })
     //cast to a boolean to avoid any weird behaviour from javscript
     return Boolean(collision);
+}
+
+const setNewHighScore = (newScore) => {
+    if (newScore > HIGH_SCORE) {
+        HIGH_SCORE = newScore;
+    }
+}
+
+//returns true if snake head is on a mouse square
+const mouseCollisionDetected = () => areCoordinatesEqual(state.snakeSquares[0], state.mouse);
+
+const growSnake = () => {
+    state.snakeSquares.push(state.lastTailLocation);
+}
+
+const updateMouse = () => {
+    const currentMouseElem = getElemByCoord(state.mouse.toString());
+    currentMouseElem.classList.remove('mouse');
+
+    state.mouse = assignRandomCoordinate();
+    const newMouseElem = getElemByCoord(state.mouse.toString());
+    newMouseElem.classList.add('mouse');
+    renderMouse();
 }
 
 // ***************** DOM MANIPULATION FUNCTIONS *****************
@@ -281,22 +325,23 @@ const renderMouse = () => {
     mouseSquare.classList.add('mouse');
 }
 
+const renderScore = () => {
+    const highScoreElem = document.querySelector('#high-score');
+    const currentScoreElem = document.querySelector('#current-score');
+
+    highScoreElem.innerHTML = `High Score: ${HIGH_SCORE}`;
+    currentScoreElem.innerHTML = `Current Score: ${state.snakeSquares.length - 1}`;
+}
+
 const render = () => {
     renderBoard();
     renderSnake();
     renderMouse();
+    renderScore();
 }
-
-
 
 // ***************** EVENT LISTENERS *****************
 document.addEventListener('keydown', handleUserInput)
 
-//test zone
-boardElem.addEventListener('click', function(event) {
-    
-}) 
-
 // ***************** WEBPAGE INITIALIZATION *****************
-resetState();
-render();
+startButtonElem.addEventListener('click', startGame);
